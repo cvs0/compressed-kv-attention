@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: g++
+            build_type: Release
+            sanitizer: OFF
+          - compiler: g++
+            build_type: Debug
+            sanitizer: ON
+          - compiler: clang++
+            build_type: Release
+            sanitizer: OFF
+          - compiler: clang++
+            build_type: Debug
+            sanitizer: ON
+    steps:
+      - uses: actions/checkout@v4
+      - name: packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build clang libomp-dev clang-format
+      - name: format
+        if: matrix.compiler == 'g++' && matrix.sanitizer == 'OFF'
+        run: |
+          FMT=$(command -v clang-format)
+          find include src tests -type f \( -name '*.hpp' -o -name '*.cpp' \) -print0 | xargs -0 "$FMT" --dry-run --Werror
+      - name: configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DKVEXP_SANITIZER=${{ matrix.sanitizer }}
+      - name: build
+        run: cmake --build build
+      - name: test
+        run: ctest --test-dir build --output-on-failure

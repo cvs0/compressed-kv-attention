@@ -1,0 +1,12 @@
+data/
+*.kvdump
+*.meta.json
+*.qsnap
+build/
+build-*/
+cmake-build-*/
+.cache/
+__pycache__/
+*.pyc
+.venv/
+results/*.bin
